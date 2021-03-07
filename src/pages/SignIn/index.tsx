@@ -1,17 +1,28 @@
 import React, { useCallback, useRef } from 'react';
 import {
-  Alert, Image, KeyboardAvoidingView, TextInput,
+  Alert,
+  Image,
+  View,
+  KeyboardAvoidingView,
+  ScrollView,
+  Platform,
+  TextInput,
 } from 'react-native';
-import * as Yup from 'yup';
 import Icon from 'react-native-vector-icons/Feather';
 import { useNavigation } from '@react-navigation/native';
+import * as Yup from 'yup';
+
 import { Form } from '@unform/mobile';
 import { FormHandles } from '@unform/core';
-import api from '../../service/api';
-import logo from '../../assets/logo.png';
-import Input from '../../components/Input/index';
-import Button from '../../components/Button/index';
+
+import { useAuth } from '../../hooks/auth';
+
 import getValidationErrors from '../../utils/getValidationErrors';
+
+import Input from '../../components/Input';
+import Button from '../../components/Button';
+
+import logoImg from '../../assets/logo.png';
 
 import {
   Container,
@@ -20,9 +31,9 @@ import {
   ForgotPasswordText,
   CreateAccountButton,
   CreateAccountButtonText,
-} from './style';
+} from './styles';
 
-interface SignInFormData{
+interface SignInFormData {
   email: string;
   password: string;
 }
@@ -30,73 +41,112 @@ interface SignInFormData{
 const SignIn: React.FC = () => {
   const formRef = useRef<FormHandles>(null);
   const passwordInputRef = useRef<TextInput>(null);
+  const navigation = useNavigation();
 
-  async function signIn(data:SignInFormData) {
-    const { email, password } = data;
-    try {
-      const response = await api.get('/');
-      console.log(response);
-    } catch (error) {
-      console.log(error);
-    }
-  }
+  const { signIn } = useAuth();
 
-  const handleSignIn = async (data: SignInFormData) => {
-    await signIn({
-      email: data.email,
-      password: data.password,
-    });
-  };
+  const handleSignIn = useCallback(
+    async (data: SignInFormData) => {
+      try {
+        formRef.current?.setErrors({});
 
-  const navigate = useNavigation();
+        const schema = Yup.object().shape({
+          email: Yup.string()
+            .email('Digite um e-mail válido')
+            .required('E-mail obrigatório'),
+          password: Yup.string().required('Senha obrigatória'),
+        });
+
+        await schema.validate(data, {
+          abortEarly: false,
+        });
+
+        await signIn({
+          email: data.email,
+          password: data.password,
+        });
+      } catch (err) {
+        if (err instanceof Yup.ValidationError) {
+          const errors = getValidationErrors(err);
+
+          formRef.current?.setErrors(errors);
+
+          return;
+        }
+
+        Alert.alert(
+          'Erro na autenticação',
+          'Ocorreu um erro ao fazer login, cheque as credenciais.',
+        );
+      }
+    },
+    [signIn],
+  );
 
   return (
     <>
-      <Container>
-        <Image source={logo} />
-        <Title> Faça seu login</Title>
-        <Form ref={formRef} style={{ width: '100%' }} onSubmit={handleSignIn}>
-          <Input
-            name="email"
-            autoCorrect={false}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            icon="mail"
-            placeholder="Digite seu E-mail"
-            returnKeyType="next"
-            onSubmitEditing={() => {
-              passwordInputRef.current?.focus();
-            }}
-          />
-          <Input
-            ref={passwordInputRef}
-            name="password"
-            icon="lock"
-            secureTextEntry
-            placeholder="Digite sua Senha"
-            returnKeyType="send"
-            onSubmitEditing={() => {
-              formRef.current?.submitForm();
-            }}
-          />
-          <Button onPress={() => {
-            formRef.current?.submitForm();
-          }}
-          >
-            Entrar
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        enabled
+      >
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ flex: 1 }}
+        >
+          <Container>
+            <Image source={logoImg} />
 
-          </Button>
-        </Form>
+            <View>
+              <Title>Faça seu logon</Title>
+            </View>
+            <Form ref={formRef} onSubmit={handleSignIn}>
+              <Input
+                autoCorrect={false}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                name="email"
+                icon="mail"
+                placeholder="E-mail"
+                returnKeyType="next"
+                onSubmitEditing={() => {
+                  passwordInputRef.current?.focus();
+                }}
+              />
 
-        <ForgotPassword>
-          <ForgotPasswordText>Esqueci a senha</ForgotPasswordText>
-        </ForgotPassword>
+              <Input
+                ref={passwordInputRef}
+                name="password"
+                icon="lock"
+                placeholder="Senha"
+                secureTextEntry
+                returnKeyType="send"
+                onSubmitEditing={() => {
+                  formRef.current?.submitForm();
+                }}
+              />
+              <View>
+              <Button
+                onPress={() => {
+                  formRef.current?.submitForm();
+                }}
+              >
+                Entrar
+              </Button>
+              </View>
+            </Form>
 
-      </Container>
+            <ForgotPassword onPress={() => {}}>
+              <ForgotPasswordText>Esqueci minha senha</ForgotPasswordText>
+            </ForgotPassword>
+          </Container>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
-      <CreateAccountButton onPress={() => navigate.navigate('SignUp')}>
+      <CreateAccountButton onPress={() => navigation.navigate('SignUp')}>
         <Icon name="log-in" size={20} color="#ff9000" />
-        <CreateAccountButtonText>Cadastre-se!</CreateAccountButtonText>
+
+        <CreateAccountButtonText>Criar uma conta</CreateAccountButtonText>
       </CreateAccountButton>
     </>
   );

@@ -40,5 +40,4 @@ export const TextInput = styled.TextInput`
 `;
 
 export const Icon = styled(FeatherIcon)`
-  margin-right: 16px;
 `;

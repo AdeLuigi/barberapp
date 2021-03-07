@@ -1,9 +1,12 @@
-import React from 'react';
-import { StatusBar, View } from 'react-native';
 import 'react-native-gesture-handler';
+
+import React from 'react';
+import { View, StatusBar } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
-import AppProvider from './hooks/index';
-import Routes from './routes/routes';
+
+import AppProvider from './hooks';
+
+import Routes from './routes';
 
 const App: React.FC = () => (
   <NavigationContainer>
@@ -13,7 +16,6 @@ const App: React.FC = () => (
         <Routes />
       </View>
     </AppProvider>
-
   </NavigationContainer>
 );
 

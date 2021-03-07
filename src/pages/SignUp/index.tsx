@@ -1,38 +1,44 @@
 import React, { useRef, useCallback } from 'react';
-import { Alert, Image, TextInput } from 'react-native';
-import * as Yup from 'yup';
+import {
+  Image,
+  View,
+  KeyboardAvoidingView,
+  ScrollView,
+  Platform,
+  TextInput,
+  Alert,
+} from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import { useNavigation } from '@react-navigation/native';
+import * as Yup from 'yup';
+
 import { Form } from '@unform/mobile';
 import { FormHandles } from '@unform/core';
-import api from '../../service/api';
+
 import getValidationErrors from '../../utils/getValidationErrors';
-import logo from '../../assets/logo.png';
-import Input from '../../components/Input/index';
-import Button from '../../components/Button/index';
+import api from '../../services/api';
+
+import Input from '../../components/Input';
+import Button from '../../components/Button';
+
+import logoImg from '../../assets/logo.png';
+
 import {
-  Container,
-  Title,
-  ForgotPassword,
-  ForgotPasswordText,
-  CreateAccountButton,
-  CreateAccountButtonText,
-} from './style';
+  Container, Title, BackToSignIn, BackToSignInText,
+} from './styles';
 
 interface SignUpFormData {
-  name:string;
-  email:string;
-  password:string;
+  name: string;
+  email: string;
+  password: string;
 }
 
 const SignUp: React.FC = () => {
-  const emailInputRef = useRef<TextInput>(null);
-
-  const passwordInputRef = useRef<TextInput>(null);
-
-  const navigate = useNavigation();
-
   const formRef = useRef<FormHandles>(null);
+  const navigation = useNavigation();
+
+  const emailInputRef = useRef<TextInput>(null);
+  const passwordInputRef = useRef<TextInput>(null);
 
   const handleSignUp = useCallback(
     async (data: SignUpFormData) => {
@@ -51,71 +57,105 @@ const SignUp: React.FC = () => {
           abortEarly: false,
         });
 
-        const response = await api.post('/users', data);
-        navigate.goBack();
+        await api.post('/users', data);
+
+        Alert.alert(
+          'Cadastro realizado com sucesso!',
+          'Você já pode fazer login na aplicação.',
+        );
+
+        navigation.goBack();
       } catch (err) {
         if (err instanceof Yup.ValidationError) {
           const errors = getValidationErrors(err);
-          console.log(err);
+
           formRef.current?.setErrors(errors);
+
+          return;
         }
+
+        Alert.alert(
+          'Erro no cadastro',
+          'Ocorreu um erro ao fazer cadastro, tente novamente.',
+        );
       }
     },
-    [],
+    [navigation],
   );
 
   return (
     <>
-      <Container>
-        <Image source={logo} />
-        <Title>Crie sua conta</Title>
-        <Form
-          ref={formRef}
-          onSubmit={handleSignUp}
-          style={{ width: '100%' }}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        enabled
+      >
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ flex: 1 }}
         >
-          <Input
-            autoCapitalize="words"
-            name="name"
-            icon="user"
-            placeholder="Digite seu Nome"
-            returnKeyType="next"
-            onSubmitEditing={() => {
-              emailInputRef.current?.focus();
-            }}
-          />
-          <Input
-            ref={emailInputRef}
-            keyboardType="email-address"
-            name="email"
-            icon="mail"
-            autoCorrect={false}
-            autoCapitalize="none"
-            placeholder="Digite seu E-mail"
-            returnKeyType="next"
-            onEndEditing={() => {
-              passwordInputRef.current?.focus();
-            }}
+          <Container>
+            <Image source={logoImg} />
 
-          />
-          <Input
-            ref={passwordInputRef}
-            secureTextEntry
-            name="password"
-            icon="lock"
-            placeholder="Digite sua Senha"
-            returnKeyType="send"
-            onSubmitEditing={() => formRef.current?.submitForm()}
-          />
-          <Button onPress={() => formRef.current?.submitForm()}>Cadastrar-se</Button>
-        </Form>
-      </Container>
-      <CreateAccountButton onPress={() => navigate.navigate('SignIn')}>
-        <Icon name="arrow-left" size={20} color="#ff9000" />
-        <CreateAccountButtonText>Voltar para Login</CreateAccountButtonText>
-      </CreateAccountButton>
+            <View>
+              <Title>Crie sua conta</Title>
+            </View>
+            <Form ref={formRef} onSubmit={handleSignUp}>
+              <Input
+                autoCapitalize="words"
+                name="name"
+                icon="user"
+                placeholder="Nome"
+                returnKeyType="next"
+                onSubmitEditing={() => {
+                  emailInputRef.current?.focus();
+                }}
+              />
+
+              <Input
+                ref={emailInputRef}
+                keyboardType="email-address"
+                autoCorrect={false}
+                autoCapitalize="none"
+                name="email"
+                icon="mail"
+                placeholder="E-mail"
+                returnKeyType="next"
+                onSubmitEditing={() => {
+                  passwordInputRef.current?.focus();
+                }}
+              />
+
+              <Input
+                ref={passwordInputRef}
+                secureTextEntry
+                name="password"
+                icon="lock"
+                placeholder="Senha"
+                textContentType="newPassword"
+                returnKeyType="send"
+                onSubmitEditing={() => {
+                  formRef.current?.submitForm();
+                }}
+              />
+
+              <View>
+              <Button onPress={() => formRef.current?.submitForm()}>
+                Entrar
+              </Button>
+              </View>
+
+            </Form>
+          </Container>
+        </ScrollView>
+      </KeyboardAvoidingView>
+
+      <BackToSignIn onPress={() => navigation.goBack()}>
+        <Icon name="arrow-left" size={20} color="#fff" />
+
+        <BackToSignInText>Voltar para logon</BackToSignInText>
+      </BackToSignIn>
     </>
-
   );
 };
 

@@ -7,7 +7,7 @@ import React, {
 } from 'react';
 import AsyncStorage from '@react-native-community/async-storage';
 
-import api from '../service/api';
+import api from '../services/api';
 
 interface AuthState {
   token: string;
@@ -72,10 +72,7 @@ const AuthProvider: React.FC = ({ children }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{
-      user: data.user, signIn, signOut, loading,
-    }}
-    >
+    <AuthContext.Provider value={{ user: data.user, signIn, signOut, loading }}>
       {children}
     </AuthContext.Provider>
   );
